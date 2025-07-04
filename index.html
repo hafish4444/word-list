@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .question-counter {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e74c3c;
+            min-width: 60px;
+        }
+
+        .score {
+            font-weight: 600;
+            color: #27ae60;
+        }
+
+        .word-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 40px 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+
+        .word-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .word {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .word-number {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .answer-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            margin-bottom: 30px;
+        }
+
+        .answer-section.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .meaning {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .meaning h3 {
+            color: #27ae60;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .meaning p {
+            color: #333;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .example {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .example h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .example p {
+            color: #333;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .completion-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .completion-screen.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .completion-title {
+            font-size: 2.5rem;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+
+        .final-score {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 0.5s ease;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .title {
+                font-size: 2rem;
+            }
+
+            .word {
+                font-size: 2.5rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">📚 Vocabulary Quiz</h1>
+            <p class="subtitle">Test your English vocabulary knowledge</p>
+        </div>
+
+        <div class="quiz-screen">
+            <div class="progress">
+                <div class="question-counter">
+                    Question <span id="currentQuestion">1</span> of <span id="totalQuestions">20</span>
+                </div>
+                <div class="timer" id="timer">10</div>
+                <div class="score">
+                    Score: <span id="score">0</span>
+                </div>
+            </div>
+
+            <div class="word-card">
+                <div class="word-number">Word #<span id="wordNumber">1</span></div>
+                <div class="word" id="currentWord">Loading...</div>
+            </div>
+
+            <div class="answer-section" id="answerSection">
+                <div class="meaning">
+                    <h3>💡 Meaning</h3>
+                    <p id="wordMeaning"></p>
+                </div>
+                <div class="example">
+                    <h3>📝 Example Sentence</h3>
+                    <p id="wordExample"></p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-primary" id="showAnswerBtn">Show Answer</button>
+                <button class="btn btn-success" id="nextBtn" style="display: none;">Next Word</button>
+                <button class="btn btn-secondary" id="restartBtn" style="display: none;">Restart Quiz</button>
+            </div>
+        </div>
+
+        <div class="completion-screen" id="completionScreen">
+            <div class="completion-title">🎉 Quiz Complete!</div>
+            <div class="final-score">
+                You completed <span id="finalScore">0</span> out of <span id="finalTotal">20</span> words!
+            </div>
+            <button class="btn btn-primary" id="restartFinalBtn">Start New Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        // Vocabulary data
+        const vocabularyData = [
+            {
+                "No.": 1,
+                "Word": "accommodate",
+                "Meaning (EN)": "to provide lodging or sufficient space for.",
+                "Example Sentence": "The hotel can accommodate up to 500 guests.",
+                "Thai": "อำนวยความสะดวก",
+                "Japanese": "収容する"
+            },
+            {
+                "No.": 2,
+                "Word": "agenda",
+                "Meaning (EN)": "a list of items to be discussed at a formal meeting.",
+                "Example Sentence": "The first item on the agenda is the quarterly budget.",
+                "Thai": "ระเบียบวาระ",
+                "Japanese": "議題"
+            },
+            {
+                "No.": 3,
+                "Word": "appreciate",
+                "Meaning (EN)": "to recognize the full worth of.",
+                "Example Sentence": "I appreciate your hard work on this project.",
+                "Thai": "ซาบซึ้ง",
+                "Japanese": "感謝する"
+            },
+            {
+                "No.": 4,
+                "Word": "brochure",
+                "Meaning (EN)": "a small book or magazine containing pictures and information about a product or service.",
+                "Example Sentence": "The travel brochure has all the information about the tour.",
+                "Thai": "แผ่นพับ",
+                "Japanese": "パンフレット"
+            },
+            {
+                "No.": 5,
+                "Word": "budget",
+                "Meaning (EN)": "an estimate of income and expenditure for a set period of time.",
+                "Example Sentence": "We need to create a budget for the upcoming marketing campaign.",
+                "Thai": "งบประมาณ",
+                "Japanese": "予算"
+            },
+            {
+                "No.": 6,
+                "Word": "colleague",
+                "Meaning (EN)": "a person with whom one works in a profession or business.",
+                "Example Sentence": "I will discuss the proposal with my colleague tomorrow.",
+                "Thai": "เพื่อนร่วมงาน",
+                "Japanese": "同僚"
+            },
+            {
+                "No.": 7,
+                "Word": "complimentary",
+                "Meaning (EN)": "given or supplied free of charge.",
+                "Example Sentence": "The hotel offers a complimentary breakfast to all its guests.",
+                "Thai": "ฟรี",
+                "Japanese": "無料の"
+            },
+            {
+                "No.": 8,
+                "Word": "confirmation",
+                "Meaning (EN)": "the action of confirming something or the state of being confirmed.",
+                "Example Sentence": "You will receive a confirmation email shortly.",
+                "Thai": "การยืนยัน",
+                "Japanese": "確認"
+            },
+            {
+                "No.": 9,
+                "Word": "deadline",
+                "Meaning (EN)": "the latest time or date by which something should be completed.",
+                "Example Sentence": "The deadline for the report submission is next Friday.",
+                "Thai": "กำหนดส่ง",
+                "Japanese": "締め切り"
+            },
+            {
+                "No.": 10,
+                "Word": "invoice",
+                "Meaning (EN)": "a list of goods sent or services provided, with a statement of the sum due for these; a bill.",
+                "Example Sentence": "Please send the invoice to the accounting department.",
+                "Thai": "ใบแจ้งหนี้",
+                "Japanese": "請求書"
+            },
+            {
+                "No.": 11,
+                "Word": "negotiation",
+                "Meaning (EN)": "discussion aimed at reaching an agreement.",
+                "Example Sentence": "The negotiation between the two companies was successful.",
+                "Thai": "การเจรจาต่อรอง",
+                "Japanese": "交渉"
+            },
+            {
+                "No.": 12,
+                "Word": "presentation",
+                "Meaning (EN)": "a speech or talk in which a new product, idea, or piece of work is shown and explained to an audience.",
+                "Example Sentence": "She gave an excellent presentation on the new marketing strategy.",
+                "Thai": "การนำเสนอ",
+                "Japanese": "プレゼンテーション"
+            },
+            {
+                "No.": 13,
+                "Word": "quarterly",
+                "Meaning (EN)": "done, produced, or occurring once every quarter of a year.",
+                "Example Sentence": "The company holds a quarterly meeting to review its performance.",
+                "Thai": "รายไตรมาส",
+                "Japanese": "四半期ごと"
+            },
+            {
+                "No.": 14,
+                "Word": "reservation",
+                "Meaning (EN)": "an arrangement whereby something, especially a seat or table, is booked or reserved for a particular person.",
+                "Example Sentence": "I'd like to make a dinner reservation for two.",
+                "Thai": "การจอง",
+                "Japanese": "予約"
+            },
+            {
+                "No.": 15,
+                "Word": "revenue",
+                "Meaning (EN)": "income, especially when of a company or organization and of a substantial nature.",
+                "Example Sentence": "The company's revenue has increased significantly this year.",
+                "Thai": "รายได้",
+                "Japanese": "収益"
+            },
+            {
+                "No.": 16,
+                "Word": "shipment",
+                "Meaning (EN)": "the action of shipping goods.",
+                "Example Sentence": "The shipment of the products will be delayed by a week.",
+                "Thai": "การขนส่งสินค้า",
+                "Japanese": "出荷"
+            },
+            {
+                "No.": 17,
+                "Word": "strategy",
+                "Meaning (EN)": "a plan of action designed to achieve a long-term or overall aim.",
+                "Example Sentence": "We need to develop a clear strategy to increase our market share.",
+                "Thai": "กลยุทธ์",
+                "Japanese": "戦略"
+            },
+            {
+                "No.": 18,
+                "Word": "warranty",
+                "Meaning (EN)": "a written guarantee, issued to the purchaser of an article by its manufacturer, promising to repair or replace it if necessary within a specified period of time.",
+                "Example Sentence": "The new television comes with a one-year warranty.",
+                "Thai": "การรับประกัน",
+                "Japanese": "保証"
+            },
+            {
+                "No.": 19,
+                "Word": "itinerary",
+                "Meaning (EN)": "a planned route or journey.",
+                "Example Sentence": "The travel agent will send us the itinerary for our trip to Europe.",
+                "Thai": "กำหนดการเดินทาง",
+                "Japanese": "旅程"
+            },
+            {
+                "No.": 20,
+                "Word": "reimbursement",
+                "Meaning (EN)": "the action of repaying a person who has spent or lost money.",
+                "Example Sentence": "You will receive reimbursement for your travel expenses.",
+                "Thai": "การเบิกเงินคืน",
+                "Japanese": "払い戻し"
+            }
+        ];
+
+        // Quiz state
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timer = 10;
+        let timerInterval;
+        let isAnswerShown = false;
+
+        // DOM elements
+        const currentQuestionEl = document.getElementById('currentQuestion');
+        const totalQuestionsEl = document.getElementById('totalQuestions');
+        const timerEl = document.getElementById('timer');
+        const scoreEl = document.getElementById('score');
+        const wordNumberEl = document.getElementById('wordNumber');
+        const currentWordEl = document.getElementById('currentWord');
+        const answerSectionEl = document.getElementById('answerSection');
+        const wordMeaningEl = document.getElementById('wordMeaning');
+        const wordExampleEl = document.getElementById('wordExample');
+        const showAnswerBtn = document.getElementById('showAnswerBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const completionScreen = document.getElementById('completionScreen');
+        const quizScreen = document.querySelector('.quiz-screen');
+        const finalScoreEl = document.getElementById('finalScore');
+        const finalTotalEl = document.getElementById('finalTotal');
+        const restartFinalBtn = document.getElementById('restartFinalBtn');
+
+        // Initialize quiz
+        function initQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            isAnswerShown = false;
+            
+            // Shuffle the vocabulary data
+            vocabularyData.sort(() => Math.random() - 0.5);
+            
+            totalQuestionsEl.textContent = vocabularyData.length;
+            updateDisplay();
+            startTimer();
+            
+            // Show quiz screen, hide completion screen
+            quizScreen.style.display = 'block';
+            completionScreen.classList.remove('show');
+        }
+
+        // Update display
+        function updateDisplay() {
+            const currentWord = vocabularyData[currentQuestionIndex];
+            
+            currentQuestionEl.textContent = currentQuestionIndex + 1;
+            scoreEl.textContent = score;
+            wordNumberEl.textContent = currentWord["No."];
+            currentWordEl.textContent = currentWord.Word;
+            wordMeaningEl.textContent = currentWord["Meaning (EN)"];
+            wordExampleEl.textContent = currentWord["Example Sentence"];
+            
+            // Reset answer section
+            answerSectionEl.classList.remove('show');
+            showAnswerBtn.style.display = 'inline-block';
+            nextBtn.style.display = 'none';
+            restartBtn.style.display = 'none';
+            isAnswerShown = false;
+            
+            // Add pulse animation to word card
+            document.querySelector('.word-card').classList.add('pulse');
+            setTimeout(() => {
+                document.querySelector('.word-card').classList.remove('pulse');
+            }, 500);
+        }
+
+        // Start timer
+        function startTimer() {
+            timer = 10;
+            timerEl.textContent = timer;
+            timerEl.style.color = '#e74c3c';
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timer--;
+                timerEl.textContent = timer;
+                
+                if (timer <= 3) {
+                    timerEl.style.color = '#c0392b';
+                    timerEl.style.fontSize = '1.8rem';
+                } else {
+                    timerEl.style.color = '#e74c3c';
+                    timerEl.style.fontSize = '1.5rem';
+                }
+                
+                if (timer <= 0) {
+                    clearInterval(timerInterval);
+                    showAnswer();
+                }
+            }, 1000);
+        }
+
+        // Show answer
+        function showAnswer() {
+            if (isAnswerShown) return;
+            
+            isAnswerShown = true;
+            clearInterval(timerInterval);
+            
+            answerSectionEl.classList.add('show');
+            showAnswerBtn.style.display = 'none';
+            
+            if (currentQuestionIndex < vocabularyData.length - 1) {
+                nextBtn.style.display = 'inline-block';
+            } else {
+                restartBtn.style.display = 'inline-block';
+            }
+            
+            // Update score if answered within time
+            if (timer > 0) {
+                score++;
+                scoreEl.textContent = score;
+            }
+        }
+
+        // Next question
+        function nextQuestion() {
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex >= vocabularyData.length) {
+                showCompletionScreen();
+            } else {
+                updateDisplay();
+                startTimer();
+            }
+        }
+
+        // Show completion screen
+        function showCompletionScreen() {
+            quizScreen.style.display = 'none';
+            completionScreen.classList.add('show');
+            finalScoreEl.textContent = score;
+            finalTotalEl.textContent = vocabularyData.length;
+        }
+
+        // Event listeners
+        showAnswerBtn.addEventListener('click', showAnswer);
+        nextBtn.addEventListener('click', nextQuestion);
+        restartBtn.addEventListener('click', initQuiz);
+        restartFinalBtn.addEventListener('click', initQuiz);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !isAnswerShown) {
+                e.preventDefault();
+                showAnswer();
+            } else if (e.code === 'Enter' && isAnswerShown) {
+                e.preventDefault();
+                if (currentQuestionIndex < vocabularyData.length - 1) {
+                    nextQuestion();
+                } else {
+                    initQuiz();
+                }
+            }
+        });
+
+        // Initialize on page load
+        window.addEventListener('load', initQuiz);
+    </script>
+</body>
+</html>
