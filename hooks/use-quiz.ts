@@ -3,6 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import type { VocabularyWord, QuizState } from "@/types/vocabulary"
 
+interface WordResult {
+  word: VocabularyWord
+  passed: boolean | null // null = not answered, true = pass, false = fail
+}
+
 export function useQuiz(vocabularyData: VocabularyWord[]) {
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
@@ -13,12 +18,14 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
   })
 
   const [shuffledData, setShuffledData] = useState<VocabularyWord[]>([])
+  const [results, setResults] = useState<WordResult[]>([])
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize quiz
   const initQuiz = useCallback(() => {
     const shuffled = [...vocabularyData].sort(() => Math.random() - 0.5)
     setShuffledData(shuffled)
+    setResults(shuffled.map((word) => ({ word, passed: null })))
     setQuizState({
       currentQuestionIndex: 0,
       score: 0,
@@ -66,10 +73,38 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
       return {
         ...prev,
         isAnswerShown: true,
-        score: prev.timer > 0 ? prev.score + 1 : prev.score,
       }
     })
   }, [clearTimer])
+
+  // Mark as pass
+  const markPass = useCallback(() => {
+    setResults((prev) => {
+      const newResults = [...prev]
+      newResults[quizState.currentQuestionIndex] = {
+        ...newResults[quizState.currentQuestionIndex],
+        passed: true,
+      }
+      return newResults
+    })
+
+    setQuizState((prev) => ({
+      ...prev,
+      score: prev.score + 1,
+    }))
+  }, [quizState.currentQuestionIndex])
+
+  // Mark as fail
+  const markFail = useCallback(() => {
+    setResults((prev) => {
+      const newResults = [...prev]
+      newResults[quizState.currentQuestionIndex] = {
+        ...newResults[quizState.currentQuestionIndex],
+        passed: false,
+      }
+      return newResults
+    })
+  }, [quizState.currentQuestionIndex])
 
   // Next question
   const nextQuestion = useCallback(() => {
@@ -89,6 +124,22 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
       }
     })
   }, [shuffledData.length, clearTimer])
+
+  // Previous question
+  const previousQuestion = useCallback(() => {
+    setQuizState((prev) => {
+      if (prev.currentQuestionIndex > 0) {
+        clearTimer()
+        return {
+          ...prev,
+          currentQuestionIndex: prev.currentQuestionIndex - 1,
+          isAnswerShown: false,
+          timer: 10,
+        }
+      }
+      return prev
+    })
+  }, [clearTimer])
 
   // Initialize on mount
   useEffect(() => {
@@ -117,13 +168,19 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
   }, [clearTimer])
 
   const currentWord = shuffledData[quizState.currentQuestionIndex]
+  const currentResult = results[quizState.currentQuestionIndex]
 
   return {
     quizState,
     currentWord,
+    currentResult,
     totalQuestions: shuffledData.length,
+    results,
     showAnswer,
     nextQuestion,
+    previousQuestion,
+    markPass,
+    markFail,
     initQuiz,
   }
 }

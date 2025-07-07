@@ -14,7 +14,18 @@ interface QuizProps {
 }
 
 export function Quiz({ vocabularyData }: QuizProps) {
-  const { quizState, currentWord, totalQuestions, showAnswer, nextQuestion, initQuiz } = useQuiz(vocabularyData)
+  const {
+    quizState,
+    currentWord,
+    currentResult,
+    totalQuestions,
+    showAnswer,
+    nextQuestion,
+    previousQuestion,
+    markPass,
+    markFail,
+    initQuiz,
+  } = useQuiz(vocabularyData)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -22,19 +33,28 @@ export function Quiz({ vocabularyData }: QuizProps) {
       if (e.code === "Space" && !quizState.isAnswerShown && !quizState.isCompleted) {
         e.preventDefault()
         showAnswer()
-      } else if (e.code === "Enter" && quizState.isAnswerShown && !quizState.isCompleted) {
+      } else if (e.code === "ArrowRight" && quizState.isAnswerShown && !quizState.isCompleted) {
         e.preventDefault()
         if (quizState.currentQuestionIndex < totalQuestions - 1) {
           nextQuestion()
-        } else {
-          initQuiz()
         }
+      } else if (e.code === "ArrowLeft" && quizState.isAnswerShown && !quizState.isCompleted) {
+        e.preventDefault()
+        if (quizState.currentQuestionIndex > 0) {
+          previousQuestion()
+        }
+      } else if (e.code === "KeyF" && quizState.isAnswerShown && !quizState.isCompleted) {
+        e.preventDefault()
+        markFail()
+      } else if (e.code === "KeyP" && quizState.isAnswerShown && !quizState.isCompleted) {
+        e.preventDefault()
+        markPass()
       }
     }
 
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [quizState, showAnswer, nextQuestion, initQuiz, totalQuestions])
+  }, [quizState, showAnswer, nextQuestion, previousQuestion, markPass, markFail, totalQuestions])
 
   if (quizState.isCompleted) {
     return <CompletionScreen score={quizState.score} totalQuestions={totalQuestions} onRestart={initQuiz} />
@@ -61,13 +81,37 @@ export function Quiz({ vocabularyData }: QuizProps) {
 
       <AnswerPanel word={currentWord} isVisible={quizState.isAnswerShown} />
 
+      {/* Show current result status */}
+      {quizState.isAnswerShown && currentResult?.passed !== null && (
+        <div className="text-center">
+          <span
+            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              currentResult.passed ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
+            }`}
+          >
+            {currentResult.passed ? "✅ Marked as Pass" : "❌ Marked as Fail"}
+          </span>
+        </div>
+      )}
+
       <QuizControls
         isAnswerShown={quizState.isAnswerShown}
+        isFirstQuestion={quizState.currentQuestionIndex === 0}
         isLastQuestion={quizState.currentQuestionIndex >= totalQuestions - 1}
         onShowAnswer={showAnswer}
         onNextQuestion={nextQuestion}
+        onPreviousQuestion={previousQuestion}
+        onMarkFail={markFail}
+        onMarkPass={markPass}
         onRestart={initQuiz}
       />
+
+      {/* Keyboard shortcuts hint */}
+      {quizState.isAnswerShown && (
+        <div className="text-center text-xs text-slate-500 mt-4">
+          <p>Keyboard shortcuts: ← Previous | → Next | F Fail | P Pass</p>
+        </div>
+      )}
     </div>
   )
 }
