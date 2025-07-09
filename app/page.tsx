@@ -1,5 +1,6 @@
 import { Quiz } from "@/components/quiz"
 import { vocabularyData } from "@/data/vocabulary"
+import { InfoIcon } from "@/components/info-icon"
 
 export default function Home() {
   return (
@@ -30,7 +31,7 @@ export default function Home() {
             </div>
 
             {/* Info icon in header */}
-            <Quiz.InfoIcon />
+            <InfoIcon />
           </div>
         </div>
 
