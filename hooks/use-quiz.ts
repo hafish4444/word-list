@@ -8,31 +8,69 @@ interface WordResult {
   passed: boolean | null // null = not answered, true = pass, false = fail
 }
 
+interface SnackbarState {
+  isVisible: boolean
+  message: string
+  type: "success" | "error" | "info"
+}
+
 export function useQuiz(vocabularyData: VocabularyWord[]) {
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
     score: 0,
-    timer: 10,
+    timer: 30,
     isAnswerShown: false,
     isCompleted: false,
   })
 
   const [shuffledData, setShuffledData] = useState<VocabularyWord[]>([])
   const [results, setResults] = useState<WordResult[]>([])
+  const [snackbar, setSnackbar] = useState<SnackbarState>({
+    isVisible: false,
+    message: "",
+    type: "success",
+  })
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isExampleShown, setIsExampleShown] = useState(false) // New state for example visibility
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Calculate score from results array
+  const calculateScore = useCallback((resultsArray: WordResult[]) => {
+    return resultsArray.filter((result) => result.passed === true).length
+  }, [])
+
+  // Show snackbar
+  const showSnackbar = useCallback((message: string, type: "success" | "error" | "info") => {
+    setSnackbar({
+      isVisible: true,
+      message,
+      type,
+    })
+  }, [])
+
+  // Hide snackbar
+  const hideSnackbar = useCallback(() => {
+    setSnackbar((prev) => ({
+      ...prev,
+      isVisible: false,
+    }))
+  }, [])
 
   // Initialize quiz
   const initQuiz = useCallback(() => {
     const shuffled = [...vocabularyData].sort(() => Math.random() - 0.5)
     setShuffledData(shuffled)
-    setResults(shuffled.map((word) => ({ word, passed: null })))
+    const initialResults = shuffled.map((word) => ({ word, passed: null }))
+    setResults(initialResults)
     setQuizState({
       currentQuestionIndex: 0,
       score: 0,
-      timer: 10,
+      timer: 30,
       isAnswerShown: false,
       isCompleted: false,
     })
+    setIsProcessing(false)
+    setIsExampleShown(false)
   }, [vocabularyData])
 
   // Clear timer function
@@ -47,7 +85,8 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
   const startTimer = useCallback(() => {
     clearTimer()
 
-    setQuizState((prev) => ({ ...prev, timer: 10 }))
+    setQuizState((prev) => ({ ...prev, timer: 30 }))
+    setIsExampleShown(false)
 
     timerIntervalRef.current = setInterval(() => {
       setQuizState((prev) => {
@@ -57,13 +96,16 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
             timerIntervalRef.current = null
           }
           return { ...prev, timer: 0, isAnswerShown: true }
+        } else if (prev.timer === 21) {
+          // Show example when timer reaches 20 (after 10 seconds)
+          setIsExampleShown(true)
         }
         return { ...prev, timer: prev.timer - 1 }
       })
     }, 1000)
   }, [clearTimer])
 
-  // Show answer
+  // Show answer (full answer)
   const showAnswer = useCallback(() => {
     setQuizState((prev) => {
       if (prev.isAnswerShown) return prev
@@ -75,71 +117,139 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
         isAnswerShown: true,
       }
     })
+    setIsExampleShown(true) // Also show example when showing full answer
   }, [clearTimer])
 
-  // Mark as pass
+  // Undo (Previous question) with score recalculation and notification
+  const undoQuestion = useCallback(() => {
+    setIsProcessing(false)
+    setIsExampleShown(false)
+    setQuizState((prev) => {
+      if (prev.currentQuestionIndex > 0) {
+        clearTimer()
+
+        // Get the previous question's result to show in notification
+        const previousIndex = prev.currentQuestionIndex - 1
+        const previousResult = results[previousIndex]
+
+        // Recalculate score based on current results
+        const newScore = calculateScore(results)
+
+        // Show undo notification with score info
+        let undoMessage = "🔄 Undone to previous question"
+        if (previousResult?.passed === true) {
+          undoMessage = `🔄 Undone - Score adjusted to ${newScore}`
+        } else if (previousResult?.passed === false) {
+          undoMessage = `🔄 Undone - Score remains ${newScore}`
+        }
+
+        showSnackbar(undoMessage, "info")
+
+        return {
+          ...prev,
+          currentQuestionIndex: previousIndex,
+          isAnswerShown: false,
+          timer: 30,
+          score: newScore, // Update score based on actual results
+        }
+      }
+      return prev
+    })
+  }, [clearTimer, calculateScore, results, showSnackbar])
+
+  // Mark as pass and auto-advance
   const markPass = useCallback(() => {
+    if (isProcessing) return
+
+    setIsProcessing(true)
+
     setResults((prev) => {
       const newResults = [...prev]
       newResults[quizState.currentQuestionIndex] = {
         ...newResults[quizState.currentQuestionIndex],
         passed: true,
       }
+
+      // Update score immediately based on new results
+      const newScore = calculateScore(newResults)
+      setQuizState((prevState) => ({
+        ...prevState,
+        score: newScore,
+      }))
+
       return newResults
     })
 
-    setQuizState((prev) => ({
-      ...prev,
-      score: prev.score + 1,
-    }))
-  }, [quizState.currentQuestionIndex])
+    showSnackbar("✅ Marked as Pass", "success")
 
-  // Mark as fail
+    // Auto-advance to next question
+    setTimeout(() => {
+      setIsExampleShown(false)
+      setQuizState((prev) => {
+        const nextIndex = prev.currentQuestionIndex + 1
+
+        if (nextIndex >= shuffledData.length) {
+          clearTimer()
+          return { ...prev, isCompleted: true }
+        } else {
+          return {
+            ...prev,
+            currentQuestionIndex: nextIndex,
+            isAnswerShown: false,
+            timer: 30,
+          }
+        }
+      })
+      setIsProcessing(false)
+    }, 1000)
+  }, [quizState.currentQuestionIndex, shuffledData.length, clearTimer, showSnackbar, isProcessing, calculateScore])
+
+  // Mark as fail and auto-advance
   const markFail = useCallback(() => {
+    if (isProcessing) return
+
+    setIsProcessing(true)
+
     setResults((prev) => {
       const newResults = [...prev]
       newResults[quizState.currentQuestionIndex] = {
         ...newResults[quizState.currentQuestionIndex],
         passed: false,
       }
+
+      // Update score immediately based on new results
+      const newScore = calculateScore(newResults)
+      setQuizState((prevState) => ({
+        ...prevState,
+        score: newScore,
+      }))
+
       return newResults
     })
-  }, [quizState.currentQuestionIndex])
 
-  // Next question
-  const nextQuestion = useCallback(() => {
-    setQuizState((prev) => {
-      const nextIndex = prev.currentQuestionIndex + 1
+    showSnackbar("❌ Marked as Fail", "error")
 
-      if (nextIndex >= shuffledData.length) {
-        clearTimer()
-        return { ...prev, isCompleted: true }
-      } else {
-        return {
-          ...prev,
-          currentQuestionIndex: nextIndex,
-          isAnswerShown: false,
-          timer: 10,
+    // Auto-advance to next question
+    setTimeout(() => {
+      setIsExampleShown(false)
+      setQuizState((prev) => {
+        const nextIndex = prev.currentQuestionIndex + 1
+
+        if (nextIndex >= shuffledData.length) {
+          clearTimer()
+          return { ...prev, isCompleted: true }
+        } else {
+          return {
+            ...prev,
+            currentQuestionIndex: nextIndex,
+            isAnswerShown: false,
+            timer: 30,
+          }
         }
-      }
-    })
-  }, [shuffledData.length, clearTimer])
-
-  // Previous question
-  const previousQuestion = useCallback(() => {
-    setQuizState((prev) => {
-      if (prev.currentQuestionIndex > 0) {
-        clearTimer()
-        return {
-          ...prev,
-          currentQuestionIndex: prev.currentQuestionIndex - 1,
-          isAnswerShown: false,
-          timer: 10,
-        }
-      }
-      return prev
-    })
-  }, [clearTimer])
+      })
+      setIsProcessing(false)
+    }, 1000)
+  }, [quizState.currentQuestionIndex, shuffledData.length, clearTimer, showSnackbar, isProcessing, calculateScore])
 
   // Initialize on mount
   useEffect(() => {
@@ -154,7 +264,6 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
       startTimer()
     }
 
-    // Cleanup on unmount or when dependencies change
     return () => {
       clearTimer()
     }
@@ -176,11 +285,14 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
     currentResult,
     totalQuestions: shuffledData.length,
     results,
+    snackbar,
+    isProcessing,
+    isExampleShown, // Export example visibility state
     showAnswer,
-    nextQuestion,
-    previousQuestion,
+    undoQuestion,
     markPass,
     markFail,
     initQuiz,
+    hideSnackbar,
   }
 }

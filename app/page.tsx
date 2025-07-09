@@ -3,10 +3,10 @@ import { vocabularyData } from "@/data/vocabulary"
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-400 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-400 flex items-center justify-center p-3">
       <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 px-8 py-6 text-center text-white relative overflow-hidden">
+        {/* Header - removed overflow-hidden to allow tooltip to show */}
+        <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-5 text-white relative">
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
               <defs>
@@ -21,12 +21,21 @@ export default function Home() {
               <rect width="100" height="100" fill="url(#grain)" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold mb-2 relative z-10">✨ Vocabulary Master</h1>
-          <p className="text-indigo-100 relative z-10">Enhance your English vocabulary with style</p>
+
+          {/* Header content with info icon */}
+          <div className="flex items-center justify-between relative z-10">
+            <div className="text-center flex-1">
+              <h1 className="text-2xl font-bold mb-1">✨ Vocabulary Master</h1>
+              <p className="text-indigo-100 text-sm">Enhance your English vocabulary with style</p>
+            </div>
+
+            {/* Info icon in header */}
+            <Quiz.InfoIcon />
+          </div>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-5">
           <Quiz vocabularyData={vocabularyData} />
         </div>
       </div>
