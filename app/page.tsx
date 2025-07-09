@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-400 flex items-center justify-center p-3">
       <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden">
-        {/* Header - removed overflow-hidden to allow tooltip to show */}
+        {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-5 text-white relative">
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">

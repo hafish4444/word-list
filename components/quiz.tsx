@@ -44,11 +44,10 @@ export function Quiz({ vocabularyData }: QuizProps) {
   const {
     quizState,
     currentWord,
-    currentResult,
     totalQuestions,
     snackbar,
     isProcessing,
-    isExampleShown, // New state
+    isExampleShown,
     showAnswer,
     undoQuestion,
     markPass,
@@ -108,14 +107,10 @@ export function Quiz({ vocabularyData }: QuizProps) {
 
         <WordDisplay word={currentWord} />
 
-        <AnswerPanel
-          word={currentWord}
-          isVisible={quizState.isAnswerShown}
-          isExampleShown={isExampleShown} // Pass the new prop
-        />
+        <AnswerPanel word={currentWord} isVisible={quizState.isAnswerShown} isExampleShown={isExampleShown} />
 
         <QuizControls
-          isAnswerShown={quizState.isAnswerShown || isExampleShown} // Show controls when example or full answer is shown
+          isAnswerShown={quizState.isAnswerShown || isExampleShown}
           isFirstQuestion={quizState.currentQuestionIndex === 0}
           isLastQuestion={quizState.currentQuestionIndex >= totalQuestions - 1}
           isProcessing={isProcessing}
