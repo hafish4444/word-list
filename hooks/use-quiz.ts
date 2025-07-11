@@ -14,6 +14,14 @@ interface SnackbarState {
   type: "success" | "error" | "info"
 }
 
+interface PassedWordsStorage {
+  [wordId: string]: {
+    word: string
+    passedAt: string // ISO date string
+    passCount: number
+  }
+}
+
 export function useQuiz(vocabularyData: VocabularyWord[]) {
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
@@ -32,7 +40,73 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [isExampleShown, setIsExampleShown] = useState(false)
+  const [passedWords, setPassedWords] = useState<PassedWordsStorage>({})
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Local storage key
+  const STORAGE_KEY = "vocabulary-quiz-passed-words"
+
+  // Load passed words from local storage
+  const loadPassedWords = useCallback(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored) as PassedWordsStorage
+        setPassedWords(parsed)
+        return parsed
+      }
+    } catch (error) {
+      console.error("Error loading passed words from localStorage:", error)
+    }
+    return {}
+  }, [])
+
+  // Save passed words to local storage
+  const savePassedWords = useCallback((words: PassedWordsStorage) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(words))
+    } catch (error) {
+      console.error("Error saving passed words to localStorage:", error)
+    }
+  }, [])
+
+  // Check if a word has been passed before
+  const isWordPassed = useCallback(
+    (word: VocabularyWord) => {
+      const wordKey = `${word["No."]}-${word.Word.toLowerCase()}`
+      return passedWords[wordKey] !== undefined
+    },
+    [passedWords],
+  )
+
+  // Add word to passed list
+  const addPassedWord = useCallback(
+    (word: VocabularyWord) => {
+      const wordKey = `${word["No."]}-${word.Word.toLowerCase()}`
+      const newPassedWords = {
+        ...passedWords,
+        [wordKey]: {
+          word: word.Word,
+          passedAt: new Date().toISOString(),
+          passCount: (passedWords[wordKey]?.passCount || 0) + 1,
+        },
+      }
+      setPassedWords(newPassedWords)
+      savePassedWords(newPassedWords)
+    },
+    [passedWords, savePassedWords],
+  )
+
+  // Clear all passed words (reset progress)
+  const clearPassedWords = useCallback(() => {
+    setPassedWords({})
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+      showSnackbar("🗑️ Progress reset - All passed words cleared", "info")
+    } catch (error) {
+      console.error("Error clearing localStorage:", error)
+    }
+  }, [])
 
   // Calculate score from results array
   const calculateScore = useCallback((resultsArray: WordResult[]) => {
@@ -164,6 +238,11 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
 
     setIsProcessing(true)
 
+    const currentWord = shuffledData[quizState.currentQuestionIndex]
+
+    // Add to passed words in localStorage
+    addPassedWord(currentWord)
+
     setResults((prev) => {
       const newResults = [...prev]
       newResults[quizState.currentQuestionIndex] = {
@@ -181,7 +260,13 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
       return newResults
     })
 
-    showSnackbar("✅ Marked as Pass", "success")
+    // Check if this word was passed before
+    const wasPassedBefore = isWordPassed(currentWord)
+    const message = wasPassedBefore
+      ? "✅ Marked as Pass (Previously learned!)"
+      : "✅ Marked as Pass (New word learned!)"
+
+    showSnackbar(message, "success")
 
     // Auto-advance to next question
     setTimeout(() => {
@@ -203,7 +288,16 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
       })
       setIsProcessing(false)
     }, 1000)
-  }, [quizState.currentQuestionIndex, shuffledData.length, clearTimer, showSnackbar, isProcessing, calculateScore])
+  }, [
+    quizState.currentQuestionIndex,
+    shuffledData,
+    clearTimer,
+    showSnackbar,
+    isProcessing,
+    calculateScore,
+    addPassedWord,
+    isWordPassed,
+  ])
 
   // Mark as fail and auto-advance
   const markFail = useCallback(() => {
@@ -252,6 +346,11 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
     }, 1000)
   }, [quizState.currentQuestionIndex, shuffledData.length, clearTimer, showSnackbar, isProcessing, calculateScore])
 
+  // Load passed words on mount
+  useEffect(() => {
+    loadPassedWords()
+  }, [loadPassedWords])
+
   // Initialize on mount
   useEffect(() => {
     if (vocabularyData.length > 0) {
@@ -280,6 +379,13 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
   const currentWord = shuffledData[quizState.currentQuestionIndex]
   const currentResult = results[quizState.currentQuestionIndex]
 
+  // Get stats about passed words
+  const getPassedWordsStats = useCallback(() => {
+    const totalPassed = Object.keys(passedWords).length
+    const totalWords = vocabularyData.length
+    return { totalPassed, totalWords, percentage: Math.round((totalPassed / totalWords) * 100) }
+  }, [passedWords, vocabularyData.length])
+
   return {
     quizState,
     currentWord,
@@ -289,6 +395,10 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
     snackbar,
     isProcessing,
     isExampleShown,
+    passedWords,
+    isWordPassed: currentWord ? isWordPassed(currentWord) : false,
+    getPassedWordsStats,
+    clearPassedWords,
     showAnswer,
     undoQuestion,
     markPass,

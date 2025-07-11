@@ -22,6 +22,9 @@ export function Quiz({ vocabularyData }: QuizProps) {
     snackbar,
     isProcessing,
     isExampleShown,
+    isWordPassed,
+    getPassedWordsStats,
+    clearPassedWords,
     showAnswer,
     undoQuestion,
     markPass,
@@ -50,15 +53,27 @@ export function Quiz({ vocabularyData }: QuizProps) {
       } else if (e.code === "KeyP" && (quizState.isAnswerShown || isExampleShown) && !quizState.isCompleted) {
         e.preventDefault()
         markPass()
+      } else if (e.code === "KeyR" && e.ctrlKey && !quizState.isCompleted) {
+        // Ctrl+R to reset progress
+        e.preventDefault()
+        clearPassedWords()
       }
     }
 
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [quizState, isExampleShown, showAnswer, undoQuestion, markPass, markFail, isProcessing])
+  }, [quizState, isExampleShown, showAnswer, undoQuestion, markPass, markFail, isProcessing, clearPassedWords])
 
   if (quizState.isCompleted) {
-    return <CompletionScreen score={quizState.score} totalQuestions={totalQuestions} onRestart={initQuiz} />
+    return (
+      <CompletionScreen
+        score={quizState.score}
+        totalQuestions={totalQuestions}
+        onRestart={initQuiz}
+        passedWordsStats={getPassedWordsStats()}
+        onClearProgress={clearPassedWords}
+      />
+    )
   }
 
   if (!currentWord) {
@@ -77,9 +92,10 @@ export function Quiz({ vocabularyData }: QuizProps) {
           totalQuestions={totalQuestions}
           score={quizState.score}
           timer={quizState.timer}
+          passedWordsStats={getPassedWordsStats()}
         />
 
-        <WordDisplay word={currentWord} />
+        <WordDisplay word={currentWord} isWordPassed={isWordPassed} />
 
         <AnswerPanel word={currentWord} isVisible={quizState.isAnswerShown} isExampleShown={isExampleShown} />
 
