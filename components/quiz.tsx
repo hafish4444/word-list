@@ -84,7 +84,7 @@ export function Quiz({ vocabularyData }: QuizProps) {
         <AnswerPanel word={currentWord} isVisible={quizState.isAnswerShown} isExampleShown={isExampleShown} />
 
         <QuizControls
-          isAnswerShown={quizState.isAnswerShown || isExampleShown}
+          isAnswerShown={quizState.isAnswerShown}
           isFirstQuestion={quizState.currentQuestionIndex === 0}
           isLastQuestion={quizState.currentQuestionIndex >= totalQuestions - 1}
           isProcessing={isProcessing}

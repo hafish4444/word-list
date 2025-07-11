@@ -31,7 +31,7 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
     type: "success",
   })
   const [isProcessing, setIsProcessing] = useState(false)
-  const [isExampleShown, setIsExampleShown] = useState(false) // New state for example visibility
+  const [isExampleShown, setIsExampleShown] = useState(false)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Calculate score from results array
@@ -280,13 +280,6 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
   const currentWord = shuffledData[quizState.currentQuestionIndex]
   const currentResult = results[quizState.currentQuestionIndex]
 
-  // Get timer phase for button display logic
-  const getTimerPhase = useCallback((timer: number) => {
-    if (timer >= 11) return "show-answer" // 30-11 seconds: Show "Show Answer" button
-    if (timer >= 1) return "fail-pass" // 10-1 seconds: Show "Fail"/"Pass" buttons
-    return "auto-answer" // 0 seconds: Auto-show full answer
-  }, [])
-
   return {
     quizState,
     currentWord,
@@ -296,7 +289,6 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
     snackbar,
     isProcessing,
     isExampleShown,
-    getTimerPhase, // Add this export
     showAnswer,
     undoQuestion,
     markPass,
