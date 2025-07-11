@@ -95,6 +95,7 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
             clearInterval(timerIntervalRef.current)
             timerIntervalRef.current = null
           }
+          // When timer reaches 0, show full answer automatically
           return { ...prev, timer: 0, isAnswerShown: true }
         } else if (prev.timer === 21) {
           // Show example when timer reaches 20 (after 10 seconds)
@@ -279,6 +280,13 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
   const currentWord = shuffledData[quizState.currentQuestionIndex]
   const currentResult = results[quizState.currentQuestionIndex]
 
+  // Get timer phase for button display logic
+  const getTimerPhase = useCallback((timer: number) => {
+    if (timer >= 11) return "show-answer" // 30-11 seconds: Show "Show Answer" button
+    if (timer >= 1) return "fail-pass" // 10-1 seconds: Show "Fail"/"Pass" buttons
+    return "auto-answer" // 0 seconds: Auto-show full answer
+  }, [])
+
   return {
     quizState,
     currentWord,
@@ -287,7 +295,8 @@ export function useQuiz(vocabularyData: VocabularyWord[]) {
     results,
     snackbar,
     isProcessing,
-    isExampleShown, // Export example visibility state
+    isExampleShown,
+    getTimerPhase, // Add this export
     showAnswer,
     undoQuestion,
     markPass,

@@ -88,6 +88,7 @@ export function Quiz({ vocabularyData }: QuizProps) {
           isFirstQuestion={quizState.currentQuestionIndex === 0}
           isLastQuestion={quizState.currentQuestionIndex >= totalQuestions - 1}
           isProcessing={isProcessing}
+          timer={quizState.timer}
           onShowAnswer={showAnswer}
           onUndoQuestion={undoQuestion}
           onMarkFail={markFail}
