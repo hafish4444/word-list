@@ -4,7 +4,7 @@ import { InfoIcon } from "@/components/info-icon"
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-200 via-purple-300 to-pink-100 flex items-center justify-center p-3">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-200 to-pink-50 flex items-center justify-center p-3">
       <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-5 text-white relative">
